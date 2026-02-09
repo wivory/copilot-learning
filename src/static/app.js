@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const participantsHtml = (details.participants && details.participants.length)
           ? `<ul class="participants-list">
-               ${details.participants.map(p => `<li>${p}</li>`).join("")}
+               ${details.participants.map(p => `<li><span class="participant-email">${p}</span><button type="button" class="participant-delete" data-activity="${name}" data-email="${p}">×</button></li>`).join("")}
              </ul>`
           : `<p class="no-participants">No participants yet</p>`;
 
@@ -91,6 +91,39 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.className = "error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  // Delegate click handler for participant delete buttons
+  activitiesList.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.participant-delete');
+    if (!btn) return;
+
+    const activity = btn.dataset.activity;
+    const email = btn.dataset.email;
+
+    if (!activity || !email) return;
+
+    try {
+      const res = await fetch(`/activities/${encodeURIComponent(activity)}/participants?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (res.ok) {
+        messageDiv.textContent = json.message;
+        messageDiv.className = 'success';
+        messageDiv.classList.remove('hidden');
+        fetchActivities();
+      } else {
+        messageDiv.textContent = json.detail || 'Failed to remove participant';
+        messageDiv.className = 'error';
+        messageDiv.classList.remove('hidden');
+      }
+      setTimeout(() => messageDiv.classList.add('hidden'), 3000);
+    } catch (err) {
+      console.error('Error removing participant:', err);
+      messageDiv.textContent = 'Failed to remove participant';
+      messageDiv.className = 'error';
+      messageDiv.classList.remove('hidden');
+      setTimeout(() => messageDiv.classList.add('hidden'), 3000);
     }
   });
 
